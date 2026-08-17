@@ -234,11 +234,18 @@ namespace operation {
     const auto sum_to_register = 0x7;
     const auto set_I = 0xA;
     const auto call_subroutine = 0x2;
-    const auto return_subroutine = 0x0;
     const auto jump_if = 0x3;
     const auto jump_if_different = 0x4;
     const auto random_number = 0xC;
     const auto draw_sprite = 0xD;
+
+    //famiglia di sub operazioni
+    const auto _0x0_ = 0x0;
+    //namespace di operazioni 
+    namespace system {
+        const auto clear = 0xE0;
+        const auto return_subroutine = 0xEE;
+    }
 
     //famiglia con sub operazioni
     const auto _0x8_ = 0x8;
@@ -299,10 +306,6 @@ void execute(const InstructionData& data)
             PC = data.nnn;
             break;
 
-        case operation::return_subroutine:
-            PC = stack.pop();
-            break;
-
         case operation::jump_if:
             if(registri[data.x] == data.nn) {
                 PC += 2;
@@ -360,6 +363,25 @@ void execute(const InstructionData& data)
             }
             break;
         }
+
+        case operation::_0x0_:
+            switch(data.nn)
+            {
+                case operation::system::clear:
+                    for (auto& row : display) {
+                        row.fill(false);
+                    }
+                    break;
+
+                case operation::system::return_subroutine:
+                    PC = stack.pop();
+                    break;
+                
+                default:
+                    DLog("[execute][err] istruzione di tipo -0x0- sconosciuta code: " << toHex(data.n));
+                    break;
+            }
+            break;
 
         case operation::_0x8_:
             switch(data.n) 
@@ -532,6 +554,7 @@ int main(int argc, char* argv[])
         const auto instruction = fetch();
         PC += 2;
         const auto operation = decode(instruction);
+
         execute(operation);
 
         // esecuzione window sfml
