@@ -236,6 +236,8 @@ namespace operation {
     const auto call_subroutine = 0x2;
     const auto jump_if = 0x3;
     const auto jump_if_different = 0x4;
+    const auto jump_if_equal = 0x5;
+    const auto jump_V0_addr = 0xB;
     const auto random_number = 0xC;
     const auto draw_sprite = 0xD;
 
@@ -277,6 +279,7 @@ namespace operation {
         const auto add_to_index = 0x1E; 
         const auto bcd_conversion = 0x33; //binary-coded decimal
         const auto load_registers = 0x65;
+        const auto save_registers = 0x55;
         const auto load_font = 0x29;
     }
 }
@@ -317,6 +320,16 @@ void execute(const InstructionData& data)
                 PC += 2;
             }
             break;
+
+        case operation::jump_if_equal:
+            if(registri[data.x] == registri[data.y]) {
+                PC += 2;
+            }
+            break;
+
+        case operation::jump_V0_addr:
+            //salta alla posizione V0 + NNN
+            PC = registri[0] + data.nnn;
 
         case operation::random_number:
         {
@@ -378,7 +391,7 @@ void execute(const InstructionData& data)
                     break;
                 
                 default:
-                    DLog("[execute][err] istruzione di tipo -0x0- sconosciuta code: " << toHex(data.n));
+                    DLog("[execute] [err] istruzione di tipo -0x0- sconosciuta code: " << toHex(data.n));
                     break;
             }
             break;
@@ -478,6 +491,15 @@ void execute(const InstructionData& data)
                     //carica nei registri i valori in memoria dopo I
                     for(int i=0; i <= data.x; ++i) {
                         registri[i] = memory[I + i];
+                    }
+                    break;
+                }
+
+                case operation::misc::save_registers:
+                {
+                    //opposto di load register
+                    for(int i=0; i <= data.x; ++i) {
+                        memory[I + i] = registri[i];
                     }
                     break;
                 }
