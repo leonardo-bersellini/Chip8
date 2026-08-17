@@ -6,7 +6,7 @@ CHIP-8 è un linguaggio interpretato nato negli anni '70 per far girare videogio
 
 ## Caratteristiche
 
-- Ciclo fetch-decode-execute completo, con supporto a tutte le istruzioni standard CHIP-8
+- Ciclo fetch-decode-execute completo, con supporto alla maggior parte delle istruzioni standard CHIP-8
 - Stack, registri, timer (delay/sound) e memoria a 4KB implementati fedelmente alla spec originale
 - Rendering dello schermo 64x32 tramite SFML
 - Font esadecimale integrato per la visualizzazione di cifre/punteggi
@@ -16,7 +16,7 @@ CHIP-8 è un linguaggio interpretato nato negli anni '70 per far girare videogio
 ## Requisiti
 
 - Compilatore C++17 o superiore
-- [SFML](https://www.sfml-dev.org/) (Graphics, Window)
+- [SFML](https://www.sfml-dev.org/) (Graphics, Window) versione precompilata 2.6.2
 - CMake 3.x+
 
 ## Build
@@ -26,6 +26,7 @@ mkdir build && cd build
 cmake ..
 cmake --build .
 ```
+> nota: è necessario modificare il path assoluto della risorsa sfml nel cmakelists per poter compilare con cmake.
 
 ## Utilizzo
 
