@@ -6,7 +6,7 @@ CHIP-8 è un linguaggio interpretato nato negli anni '70 per far girare videogio
 
 ## Caratteristiche
 
-- Ciclo fetch-decode-execute completo, con supporto alla maggior parte delle istruzioni standard CHIP-8
+- Ciclo fetch-decode-execute completo, con supporto a tutte delle istruzioni standard CHIP-8
 - Stack, registri, timer (delay/sound) e memoria a 4KB implementati fedelmente alla spec originale
 - Rendering dello schermo 64x32 tramite SFML
 - Font esadecimale integrato per la visualizzazione di cifre/punteggi

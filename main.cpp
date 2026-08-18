@@ -10,6 +10,7 @@
 #include <chrono>
 #include <random>
 #include <windows.h>
+#include <optional>
 
 #include "ui/renderer.h"
 
@@ -32,11 +33,13 @@
 
 /* numero di celle da 8bit che costituiscono la memoria */
 static const std::uint16_t memory_size = 4096;
+
 /* lunghezza dello spazio di memoria dedicato al programma stesso*/
 static const std::uint16_t memory_start = 512;
 
 /* cella di partenza convenzionale per i dati del font nativo */
 static const std::uint16_t font_start = 0x50; //80
+
 /* array di 80 byte con i dati del font nativo */
 static const std::array<std::uint8_t, 80> font_data = {
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -66,7 +69,7 @@ static std::mt19937 gen(rd());
 /* array di memoria per lo stato dei tatsi premuti */
 static std::array<InputKey, 16> keyboard_keys;
 
-/* */
+/* renderer con backend sfml per rappresentazione e disegno del display */
 static Renderer renderer;
 
 
@@ -228,30 +231,31 @@ InstructionData decode(std::uint16_t instruction)
 
 /* EXECUTE : esegue l'istruzione corrente */
 
-namespace operation {
+namespace operation 
+{
     const auto jump = 0x1;
+    const auto call_subroutine = 0x2;
+    const auto skip_if = 0x3;
+    const auto skip_if_different = 0x4;
+    const auto skip_if_equal = 0x5;
     const auto load_to_register = 0x6;
     const auto sum_to_register = 0x7;
     const auto set_I = 0xA;
-    const auto call_subroutine = 0x2;
-    const auto jump_if = 0x3;
-    const auto jump_if_different = 0x4;
-    const auto jump_if_equal = 0x5;
     const auto jump_V0_addr = 0xB;
     const auto random_number = 0xC;
     const auto draw_sprite = 0xD;
 
-    //famiglia di sub operazioni
+    //namespace di operazioni di sistema
     const auto _0x0_ = 0x0;
-    //namespace di operazioni 
+
     namespace system {
         const auto clear = 0xE0;
         const auto return_subroutine = 0xEE;
     }
 
-    //famiglia con sub operazioni
-    const auto _0x8_ = 0x8;
     //namespace per operazioni aritmetiche
+    const auto _0x8_ = 0x8;
+
     namespace math {
         const auto assign = 0x0;
         const auto or_op = 0x1;
@@ -259,19 +263,22 @@ namespace operation {
         const auto xor_op = 0x3;
         const auto add = 0x4;
         const auto sub = 0x5;
+        const auto rshift = 0x6;
+        const auto lshift = 0xE;
+        const auto subn = 0x7;
     }
 
-    //famiglia con sub operazioni
-    const auto _0xE_ = 0xE;
     //namespace per tasti permuti e input operations
+    const auto _0xE_ = 0xE;
+
     namespace keyboard {
         const auto jump_if_pressed = 0x9E;
         const auto jump_ifnot_pressed = 0xA1;
     }
-
-    //famiglia con sub operazioni 
-    const auto _0xF_ = 0xF; 
+ 
     //namespace con operazioni varie "misc/memory operations"
+    const auto _0xF_ = 0xF; 
+
     namespace misc {
         const auto get_delay_timer = 0x07;
         const auto set_delay_timer = 0x15;
@@ -281,6 +288,7 @@ namespace operation {
         const auto load_registers = 0x65;
         const auto save_registers = 0x55;
         const auto load_font = 0x29;
+        const auto wait_for_key = 0xA;
     }
 }
 
@@ -290,6 +298,29 @@ void execute(const InstructionData& data)
     {
         case operation::jump:
             PC = data.nnn;
+            break;
+
+        case operation::call_subroutine:
+            stack.push(PC);
+            PC = data.nnn;
+            break;
+
+        case operation::skip_if:
+            if(registri[data.x] == data.nn) {
+                PC += 2;
+            }
+            break;
+
+        case operation::skip_if_different:
+            if(registri[data.x] != data.nn) {
+                PC += 2;
+            }
+            break;
+
+        case operation::skip_if_equal:
+            if(registri[data.x] == registri[data.y]) {
+                PC += 2;
+            }
             break;
 
         case operation::load_to_register:
@@ -304,32 +335,10 @@ void execute(const InstructionData& data)
             I = data.nnn;
             break;
 
-        case operation::call_subroutine:
-            stack.push(PC);
-            PC = data.nnn;
-            break;
-
-        case operation::jump_if:
-            if(registri[data.x] == data.nn) {
-                PC += 2;
-            }
-            break;
-
-        case operation::jump_if_different:
-            if(registri[data.x] != data.nn) {
-                PC += 2;
-            }
-            break;
-
-        case operation::jump_if_equal:
-            if(registri[data.x] == registri[data.y]) {
-                PC += 2;
-            }
-            break;
-
         case operation::jump_V0_addr:
             //salta alla posizione V0 + NNN
             PC = registri[0] + data.nnn;
+            break;
 
         case operation::random_number:
         {
@@ -342,11 +351,8 @@ void execute(const InstructionData& data)
         case operation::draw_sprite:
         {   
             /*
-            L'operazione di draw avviene su sprite sempre larghi 8px e alti N.
-            Questo draw avviene a partire dalla posizione (Vx, Vy).
-            Il disegno avviene in XOR (tramite negazione bit per bit) sui pixel già 
-            presenti a schermo. Questo permette di "cancellare" uno sprite 
-            ridisegnandolo nella stessa posizione.
+            L'operazione di draw avviene su sprite sempre larghi 8px e alti N. Questo draw avviene a partire dalla posizione (Vx, Vy).
+            Il disegno avviene in XOR (tramite negazione bit per bit) sui pixel già presenti a schermo. 
             */
                     
             //calcolo posizione di partenza e controllo overflow dello schermo
@@ -427,6 +433,26 @@ void execute(const InstructionData& data)
                     registri[0xF] = (registri[data.x] >= registri[data.y]) ? 1 : 0;
                     registri[data.x] = registri[data.x] - registri[data.y];
                     break;
+
+                case operation::math::rshift:
+                    registri[0xF] = registri[data.x] & 0x1;
+                    registri[data.x] >>= 1;
+                    break;
+
+                case operation::math::lshift:
+                    registri[0xF] = (registri[data.x] >> 7) & 0x1;
+                    registri[data.x] <<= 1;
+                    break;
+
+                case operation::math::subn:
+                {
+                    auto& vx = registri[data.x];
+                    auto& vy = registri[data.y];
+
+                    registri[0xF] = (vy >= vx) ? 1 : 0;
+                    vx = vy - vx;
+                    break;
+                }
 
                 default:
                     DLog("[execute] [err]: operazione di tipo -0x8- sconosciuta. code: " << toHex(data.n));
@@ -509,6 +535,24 @@ void execute(const InstructionData& data)
                     auto requested_char = registri[data.x];
                     //calcola l'indirizzo del carattere richiesto, considerando 5 byte per ognuno
                     I = font_start + (5 * requested_char);
+                    break;
+                }
+
+                case operation::misc::wait_for_key:
+                {
+                    //istruzione bloccante
+                    while(true) {
+                        renderer.executeWindowFrame();
+                        renderer.updateDisplayState(display);
+                        if(!renderer.isOpen()) return;
+
+                        const auto key = renderer.getPressedKey();
+                        if(key.has_value()) {
+                            registri[data.x] = key.value();
+                        }
+
+                        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                    }
                     break;
                 }
 

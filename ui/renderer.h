@@ -104,6 +104,7 @@ private:
     }
 };
 
+/* codici dei tasti disponibili nel chip8 */
 enum class KeyCode 
 {
     _0 = 0x0, _1 = 0x1, _2 = 0x2, _3 = 0x3,
