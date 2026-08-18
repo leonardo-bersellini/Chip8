@@ -19,7 +19,7 @@ target_compile_definitions(Chip8 PRIVATE
 )
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release") 
-    set(EXE_NAME "Chip8_RELEASE")
+    set(EXE_NAME "Chip8")
 else()
     set(EXE_NAME "Chip8_DEBUG")
 endif()
@@ -39,4 +39,10 @@ add_custom_command(TARGET Chip8 POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
             "${CMAKE_SOURCE_DIR}/dependencies"
             "$<TARGET_FILE_DIR:Chip8>"
+)
+
+add_custom_command(TARGET Chip8 POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_SOURCE_DIR}/roms"
+            "$<TARGET_FILE_DIR:Chip8>/roms"
 )

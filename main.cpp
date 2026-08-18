@@ -141,13 +141,13 @@ void loadFont()
     }
 }
 
-void loadROM(const std::string& path) 
+bool loadROM(const std::string& path) 
 {
     std::ifstream file(path, std::ios::in | std::ios::binary);
 
     if(!file.is_open()) {
         std::cout << "errore nell'apertura del file, impossibile eseguire il load" << std::endl;
-        return;
+        return false;
     }
 
     file.seekg(0, std::ios::end);
@@ -156,7 +156,7 @@ void loadROM(const std::string& path)
 
     if(size > (memory_size - memory_start)) {
         std::cout << "file rom troppo grande, impossibile eseguire il load" << std::endl;
-        return;
+        return false;
     }
 
     std::vector<std::uint8_t> rom(size);
@@ -169,6 +169,8 @@ void loadROM(const std::string& path)
         std::cout << toHex(t) << std::endl;
         index++;
     }
+
+    return true;
 }
 
 void update_timers()
@@ -589,13 +591,19 @@ int main(int argc, char* argv[])
 
     // Load ROM
 
+    bool loaded;
+
     if(argc < 2) {
         std::string rom;
         std::cout << "Seleziona il path per il file ROM: ";
         std::cin >> rom;
-        loadROM(rom);
+        loaded = loadROM(rom);
     } else {
-        loadROM(argv[1]);
+        loaded = loadROM(argv[1]);
+    }
+
+    if(!loaded) {
+        return -1;
     }
     
     // Inizializzazione
