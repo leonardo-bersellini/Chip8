@@ -237,9 +237,10 @@ namespace operation
 {
     const auto jump = 0x1;
     const auto call_subroutine = 0x2;
-    const auto skip_if = 0x3;
+    const auto skip_if_equal = 0x3;
     const auto skip_if_different = 0x4;
-    const auto skip_if_equal = 0x5;
+    const auto skip_if_equal_register = 0x5;
+    const auto skip_if_different_register = 0x9;
     const auto load_to_register = 0x6;
     const auto sum_to_register = 0x7;
     const auto set_I = 0xA;
@@ -307,7 +308,7 @@ void execute(const InstructionData& data)
             PC = data.nnn;
             break;
 
-        case operation::skip_if:
+        case operation::skip_if_equal:
             if(registri[data.x] == data.nn) {
                 PC += 2;
             }
@@ -319,8 +320,14 @@ void execute(const InstructionData& data)
             }
             break;
 
-        case operation::skip_if_equal:
+        case operation::skip_if_equal_register:
             if(registri[data.x] == registri[data.y]) {
+                PC += 2;
+            }
+            break;
+
+        case operation::skip_if_different_register:
+            if(registri[data.x] != registri[data.y]) {
                 PC += 2;
             }
             break;
